@@ -1,0 +1,300 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  phone       String?
+  password    String?
+  role        Role     @default(CUSTOMER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  addresses   Address[]
+  orders      Order[]
+  reviews     Review[]
+  wishlist    Wishlist[]
+}
+
+enum Role {
+  SUPER_ADMIN
+  MANAGER
+  STAFF
+  CUSTOMER
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  description String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+} 
+
+model Brand {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
+model Publisher {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
+model Author {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+  createdAt DateTime  @default(now())
+}
+
+model Product {
+  id              String         @id @default(cuid())
+  slug            String         @unique
+  name            String
+  sku             String         @unique
+  isbn            String?
+  description     String
+  shortDescription String?
+  mrp             Float
+  price           Float
+  wholesalePrice  Float?
+  stock           Int            @default(0)
+  reservedStock   Int            @default(0)
+  minimumOrderQty Int            @default(1)
+  weight          String?
+  dimensions      String?
+  status          ProductStatus  @default(PUBLISHED)
+  published       Boolean        @default(true)
+  featured        Boolean        @default(false)
+  rating          Float          @default(0)
+  reviewCount     Int            @default(0)
+  categoryId      String
+  category        Category       @relation(fields: [categoryId], references: [id])
+  brandId         String?
+  brand           Brand?         @relation(fields: [brandId], references: [id])
+  publisherId     String?
+  publisher       Publisher?     @relation(fields: [publisherId], references: [id])
+  authorId        String?
+  author          Author?        @relation(fields: [authorId], references: [id])
+  images          ProductImage[]
+  orderItems      OrderItem[]
+  reviews         Review[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  HIDDEN
+  OUT_OF_STOCK
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  url       String
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Address {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  name      String
+  phone     String
+  address   String
+  landmark  String?
+  city      String
+  district  String
+  state     String
+  pincode   String
+  isDefault Boolean @default(false)
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id])
+  customerName    String
+  phone           String
+  email           String?
+  address         String
+  landmark        String?
+  city            String
+  district        String
+  state           String
+  pincode         String
+  subtotal        Float
+  discount        Float @default(0)
+  deliveryFee     Float @default(0)
+  total           Float
+  paymentMethod   PaymentMethod
+  paymentStatus   PaymentStatus @default(PENDING)
+  status          OrderStatus @default(PENDING)
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  PACKED
+  READY_FOR_DISPATCH
+  SHIPPED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  RETURNED
+  REFUNDED
+  FAILED
+}
+
+enum PaymentMethod {
+  UPI
+  CARD
+  NET_BANKING
+  COD
+  CASHFREE
+  RAZORPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  COD_PENDING
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float
+  createdAt DateTime @default(now())
+}
+
+model Coupon {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  type            CouponType
+  value           Float
+  minOrderValue   Float?
+  productId       String?
+  categoryId      String?
+  expiryDate      DateTime?
+  usageLimit      Int?
+  customerUsageLimit Int?
+  active          Boolean @default(true)
+  createdAt       DateTime @default(now())
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  rating      Int
+  review      String
+  approved    Boolean @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  createdAt DateTime @default(now())
+}
+
+model WholesaleEnquiry {
+  id             String   @id @default(cuid())
+  businessName   String
+  contactName    String
+  phone          String
+  email          String?
+  city           String
+  requirement    String
+  notes          String?
+  status         EnquiryStatus @default(PENDING)
+  createdAt      DateTime @default(now())
+}
+
+enum EnquiryStatus {
+  PENDING
+  REVIEWED
+  QUOTED
+  APPROVED
+  REJECTED
+}
+
+model Settings {
+  id          String @id @default(cuid())
+  key         String @unique
+  value       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SupportTicket {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String
+  subject   String
+  message   String
+  status    String @default("Open")
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model DeliveryZone {
+  id             String   @id @default(cuid())
+  name           String
+  pincodeList    String
+  fee            Float
+  freeThreshold  Float?
+  estimatedDays  String
+  active         Boolean @default(true)
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actor       String
+  action      String
+  details     String?
+  createdAt   DateTime @default(now())
+}
